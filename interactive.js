@@ -402,11 +402,24 @@
       curve.state.series = series; curve.draw();
       score.state.marker = best[i] != null ? { x: g.generation, y: best[i] } : null; score.draw();
       var kept = g.boxes.filter(function (b) { return b.kept; }).length;
-      var legend = $('.evo-legend', block); legend.textContent = 'Generation ' + g.generation + ': ' + g.boxes.length + ' boxes scored, ' + kept + ' kept' + (bestBox ? ' · best ' + (bestBox.id || '') + (bestBox.motifs ? ' (' + motifText(bestBox) + ')' : '') + (bestBox.score != null ? ', score ' + fmt(bestBox.score, 2) : '') : '');
+      var legend = $('.evo-legend', block); legend.textContent = 'Generation ' + g.generation + ': ' + (g.n_submitted ? g.n_submitted + ' packings submitted, ' : '') + (g.n_densified ? g.n_densified + ' survived densification, ' : '') + g.boxes.length + ' boxes scored, ' + kept + ' kept' + (bestBox ? ' · best ' + (bestBox.id || '') + (bestBox.motifs ? ' (' + motifText(bestBox) + ')' : '') + (bestBox.score != null ? ', score ' + fmt(bestBox.score, 2) : '') : '');
       return 'generation ' + g.generation + ' of ' + gens[gens.length - 1].generation;
     }
     makePlayer($('.evo-controls', block), gens.length, showGen, { periodMs: 1400, loop: false, label: 'Generation' });
     if (data.score_definition) $('.data-label', block).textContent = data.score_definition;
+  }
+
+
+  function pocketOccupant(frame, nAtoms, cell) {
+    var dist = distFn(cell), best = null;
+    for (var k = 0; k < frame.symbols.length; k++) {
+      if (frame.symbols[k] !== 'Li') continue;
+      var ds = nAtoms.map(function (n) { return dist(frame.xyz[k], frame.xyz[n]); });
+      var nn = ds.filter(function (d) { return d < CUT.NLi; }).length;
+      var mn = Math.min.apply(null, ds);
+      if (nn >= 2 && (!best || nn > best.nn || (nn === best.nn && mn < best.min))) best = { idx: k, nn: nn, min: mn, ds: ds };
+    }
+    return best;
   }
 
   /* ------------------------------------------------------------------ */
@@ -416,31 +429,32 @@
     var frames = data.frames, pocket = data.pocket || {};
     var vcol = $('.viewer-col', block), ccol = $('.chart-col', block);
     var sv = makeStructureViewer(vcol, data, {
-      highlight: function () { return { atoms: pocket.n_atoms || [], li: pocket.li_atom != null ? [pocket.li_atom] : [], color: PAL.blue }; },
-      focus: function () { return (pocket.n_atoms && pocket.n_atoms.length) ? { index: pocket.n_atoms.concat(pocket.li_atom != null ? [pocket.li_atom] : []) } : {}; }
+      highlight: function (frame) { var occ = pocket.n_atoms ? pocketOccupant(frame, pocket.n_atoms, data.cell) : null; return { atoms: pocket.n_atoms || [], li: occ ? [occ.idx] : [], color: PAL.blue }; },
+      focus: function () { return (pocket.n_atoms && pocket.n_atoms.length) ? { index: pocket.n_atoms } : {}; }
     });
     var dis = frames.filter(function (f) { return f.branch !== 'charge'; }), chg = frames.filter(function (f) { return f.branch === 'charge'; });
-    var series = [{ x: dis.map(function (f) { return f.capacity_mAh_g; }), y: dis.map(function (f) { return f.voltage_V; }), color: PAL.blue, label: 'discharge', labelAt: 0.15 }];
-    if (chg.length) series.push({ x: chg.map(function (f) { return f.capacity_mAh_g; }), y: chg.map(function (f) { return f.voltage_V; }), color: PAL.orange, label: 'charge', labelAt: 0.85 });
+    var series = [{ x: dis.map(function (f) { return f.capacity_mAh_g; }), y: dis.map(function (f) { return f.voltage_V; }), color: PAL.blue, label: 'discharge', labelAt: 0.6 }];
+    if (chg.length) series.push({ x: chg.map(function (f) { return f.capacity_mAh_g; }), y: chg.map(function (f) { return f.voltage_V; }), color: PAL.orange, label: 'charge', labelAt: 0.12 });
     var canvas = el('canvas', 'chart'); var cwrap = el('div', 'chart-wrap'); cwrap.appendChild(canvas); ccol.appendChild(cwrap);
     var shade = (data.trapped_mAh_g != null) ? { x0: 0, x1: data.trapped_mAh_g, color: 'rgba(74,58,167,0.10)' } : null;
     var chart = makeChart(canvas, { series: series, shade: shade, xlabel: 'capacity (mAh per g of SPAN)', ylabel: 'voltage vs Li/Li⁺ (V)', xunit: 'mAh/g', yunit: 'V', height: 250 });
     var statsEl = el('div', 'stats-grid'); ccol.appendChild(statsEl);
     var cells = {};
-    [['branch', 'branch'], ['dLiN', 'Li–N distances in the pocket (Å)'], ['inPocket', 'pocket lithium'], ['nLi', 'Li atoms in the box']].forEach(function (p) { var c = el('div', 'stat'); var v = el('b', null, '–'); c.appendChild(v); c.appendChild(el('span', null, p[1])); statsEl.appendChild(c); cells[p[0]] = v; });
+    [['branch', 'branch'], ['dLiN', 'Li–N distances of the lithium in the pocket (Å)'], ['inPocket', 'pocket state'], ['nLi', 'Li atoms in the box']].forEach(function (p) { var c = el('div', 'stat'); var v = el('b', null, '–'); c.appendChild(v); c.appendChild(el('span', null, p[1])); statsEl.appendChild(c); cells[p[0]] = v; });
     if (data.trapped_mAh_g != null) { var note = el('p', 'muted small'); note.textContent = 'Shaded: ' + fmt(data.trapped_mAh_g, 0) + ' mAh/g that does not come out below the ' + fmt(data.charge_cutoff_V || 3, 1) + ' V charge cutoff' + (data.trapped_fraction != null ? ' (' + Math.round(data.trapped_fraction * 100) + ' % of the first discharge)' : '') + '.'; ccol.appendChild(note); }
     makePlayer(ccol, frames.length, function (i) {
       if (sv) sv.show(i);
       var f = frames[i], dist = distFn(data.cell);
       cells.branch.textContent = f.branch || 'discharge';
       var nLi = f.symbols.filter(function (s) { return s === 'Li'; }).length; cells.nLi.textContent = nLi;
-      if (pocket.li_atom != null && pocket.n_atoms && f.symbols[pocket.li_atom] === 'Li') {
-        var ds = pocket.n_atoms.map(function (n) { return dist(f.xyz[pocket.li_atom], f.xyz[n]); });
-        cells.dLiN.textContent = ds.map(function (d) { return fmt(d, 2); }).join(', ');
-        var inP = ds.filter(function (d) { return d < CUT.NLi; }).length >= 2; cells.inPocket.textContent = inP ? 'held by ' + ds.filter(function (d) { return d < CUT.NLi; }).length + ' N' : 'left the pocket';
-      } else { cells.dLiN.textContent = '–'; cells.inPocket.textContent = 'not yet inserted'; }
+      var occ = pocket.n_atoms ? pocketOccupant(f, pocket.n_atoms, data.cell) : null;
+      if (occ) {
+        cells.dLiN.textContent = occ.ds.map(function (d) { return fmt(d, 2); }).join(', ');
+        cells.inPocket.textContent = 'held by ' + occ.nn + ' N';
+      } else { cells.dLiN.textContent = '–'; cells.inPocket.textContent = (f.branch === 'charge') ? 'pocket emptied' : 'pocket empty'; }
       chart.state.marker = (f.voltage_V != null) ? { x: f.capacity_mAh_g, y: f.voltage_V } : null; chart.draw();
-      return (f.branch || 'discharge') + ' · step ' + (i + 1) + ' / ' + frames.length + ' · ' + fmt(f.capacity_mAh_g, 0) + ' mAh/g' + (f.voltage_V != null ? ' · ' + fmt(f.voltage_V, 2) + ' V' : '');
+      var cutoff = data.charge_cutoff_V || 3.0; var above = (f.branch === 'charge' && f.voltage_V != null && f.voltage_V > cutoff);
+      return (f.branch || 'discharge') + ' · step ' + (i + 1) + ' / ' + frames.length + ' · ' + fmt(f.capacity_mAh_g, 0) + ' mAh/g' + (f.voltage_V != null ? ' · ' + fmt(f.voltage_V, 2) + ' V' : '') + (above ? ' · above the ' + fmt(cutoff, 1) + ' V cutoff: the cell never gets here' : '');
     }, { periodMs: 300, loop: false, label: 'Cycle step' });
     if (data.label) $('.data-label', block).textContent = data.label;
   }

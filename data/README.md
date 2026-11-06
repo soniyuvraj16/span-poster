@@ -99,7 +99,7 @@ One entry per generation. Generation 1 alone is fine; the viewer handles any num
 
 ## File 3: `data/pocket_cycle.json`
 
-The C=S box of panel 6, first discharge then charge. Frames are the relaxed configurations after each batch on discharge and after each removal on charge; mark the branch. The pocket is the one in `fig_pocket_chem.png`: give the indices of its ring nitrogens and of the lithium they hold. Order the atoms so that the pocket lithium is the first lithium (index = number of framework atoms); keep that index constant in every frame in which the atom exists. If you must subsample, keep every frame between 0 and 100 mAh/g on both branches, that is where the pocket fills and fails to empty.
+The C=S box of panel 6, first discharge then charge. Frames are the relaxed configurations after each batch on discharge and after each removal on charge; mark the branch. `pocket.n_atoms` are the indices of the ring nitrogens of one trapping pocket. Choose it from the charge branch: find the lithium removed at the highest voltage above the cutoff (match lithium between consecutive charge frames by position, since removed atoms are deleted from the list), take its nitrogen neighbours within 2.6 Å, and check that this nitrogen set is occupied by some lithium (at least two N within 2.45 Å) from early discharge until the charge branch passes the cutoff. The page tracks the pocket, not an atom index: in every frame it highlights whichever lithium sits in it, because lithium atoms exchange during the anneals. `pocket.li_atom` is optional (the index of the first lithium, for reference). If you must subsample, keep every frame between 0 and 120 mAh/g on both branches.
 
 ```json
 {
@@ -172,7 +172,6 @@ for name in ["discharge_box", "pocket_cycle"]:
     if name == "pocket_cycle":
         p = d["pocket"]; need(all(fr[0]["symbols"][j] == "N" for j in p["n_atoms"]), "pocket n_atoms are not nitrogen")
         need(len([f for f in fr if f.get("branch") == "charge"]) > 0, "no charge frames")
-        li = p["li_atom"]; need(li == len(fw0), "pocket li_atom must be the first lithium (index = number of framework atoms)")
     print(path, len(fr), "frames,", len(fr[-1]["symbols"]), "atoms in the last frame")
 
 path = "data/evolution.json"
