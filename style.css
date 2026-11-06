@@ -334,3 +334,53 @@ tbody tr:last-child td { border-bottom: none; }
   .nav-links a { display: block; font-size: 0.95rem; padding: 9px 10px; }
   th, td { padding: 8px 10px; }
 }
+
+/* ---------- interactive blocks ---------- */
+.interactive {
+  margin: 1.6em 0;
+  padding: 20px 22px;
+  border: 1px solid rgba(45, 35, 96, 0.18);
+  border-radius: 10px;
+  background: #faf8ff;
+}
+.interactive h3 { margin-top: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 0.92rem; }
+.cell-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cell-panel svg { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid rgba(45, 35, 96, 0.14); background: #fff; }
+.player { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.player input[type="range"] { flex: 1 1 160px; accent-color: var(--accent); min-width: 120px; }
+.player-readout { font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.player-speed { font-size: 0.85rem; color: var(--muted); }
+.player-speed select { font: inherit; padding: 2px 4px; border-radius: 6px; border: 1px solid rgba(45, 35, 96, 0.3); background: #fff; }
+.btn-play {
+  font: 600 0.9rem "Inter", sans-serif; color: #fff; background: var(--accent);
+  border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; min-width: 84px;
+}
+.btn-play:hover { background: var(--border); }
+.btn-play:disabled { background: #a9a3c9; cursor: not-allowed; }
+.viewer-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; align-items: start; }
+.viewer3d { position: relative; width: 100%; height: 420px; border-radius: 8px; border: 1px solid rgba(45, 35, 96, 0.18); overflow: hidden; background: #fff; }
+.viewer3d canvas { border-radius: 8px; }
+.atom-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
+.atom-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.15); }
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap h4 { font: 600 0.85rem "Inter", sans-serif; color: var(--muted); margin: 0 0 4px; letter-spacing: 0.02em; }
+canvas.chart { width: 100%; display: block; background: #fff; border-radius: 8px; border: 1px solid rgba(45, 35, 96, 0.12); }
+.chart-tip { position: absolute; pointer-events: none; background: var(--border); color: #fff; font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 5; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.stat { background: #fff; border: 1px solid rgba(45, 35, 96, 0.12); border-radius: 8px; padding: 8px 10px; }
+.stat b { display: block; font-size: 1.15rem; color: var(--border); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.74rem; color: var(--muted); line-height: 1.3; display: block; }
+.evo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.evo-legend { margin: 10px 0 0; color: var(--ink); }
+@media (max-width: 900px) {
+  .evo-grid { grid-template-columns: 1fr; }
+  .viewer-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .interactive { padding: 14px 12px; }
+  .cell-grid { grid-template-columns: 1fr; }
+  .viewer3d { height: 320px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}

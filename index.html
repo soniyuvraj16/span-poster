@@ -60,6 +60,16 @@
     <figure>
       <img src="figures/fig_span_structure.png" width="1518" height="1287" alt="Proposed bonding motifs of SPAN: three cyclized chains with C–Sx–C, N–Sx–N and N–Sx–C bridges, C=S, intra-chain S3 rings and a pendant C–Sx–H" loading="lazy">
     </figure>
+
+    <div class="interactive" id="shuttle-anim">
+      <h3>Why covalent sulfur matters: shuttle against SPAN</h3>
+      <p class="muted small">Schematic, not a simulation. Left: an elemental sulfur cathode forms soluble Li<sub>2</sub>S<sub>x</sub> that drifts to the anode and is lost. Right: in SPAN every sulfur chain is bonded to the cyclized backbone, so it is reduced in place, solid to solid, and nothing dissolves. Press play or drag the slider through one discharge.</p>
+      <div class="cell-grid">
+        <div class="cell-panel"></div>
+        <div class="cell-panel"></div>
+      </div>
+      <div class="shuttle-controls player"></div>
+    </div>
     <p class="refs">References: Manthiram, Fu, Chung, Zu, Su, <em>Chem. Rev.</em> 114, 11751 (2014). Liu, Holoubek et al., <em>Mater. Today</em> 42, 17 (2021) (1,200 cycles, no capacity decay). Mukkabla and Buchmeiser, <em>J. Mater. Chem. A</em> 8, 5379 (2020) (structure review).</p>
   </section>
 
@@ -167,6 +177,15 @@
 
     <p>One &ldquo;insertion order&rdquo; is one complete run from pristine to Li/S = 2 with its own random choice among candidate sites at every step. Each box is run with 30 insertion orders (18 to 24 steps each, about 600 relaxed configurations and about 4 ns of dynamics per box). The curve on the poster is the mean over the 30 orders and the band is one standard deviation. Charge is the same equation run backwards, removing the cheapest lithium first.</p>
 
+
+    <div class="interactive" id="discharge-viewer" hidden>
+      <h3>Watch one box discharge</h3>
+      <p class="muted small">One insertion order from pristine to Li/S = 2: every frame is the relaxed box after one lithium batch. Drag the structure to rotate it, scroll to zoom. The counters are computed from the coordinates with distance cutoffs (S&ndash;S 2.35 &Aring;, S&ndash;C 1.95 &Aring;, S&ndash;N 1.90 &Aring;, S&ndash;Li 2.85 &Aring;). <span class="data-label"></span></p>
+      <div class="viewer-grid">
+        <div class="viewer-col"></div>
+        <div class="chart-col"></div>
+      </div>
+    </div>
     <figure>
       <img src="figures/fig_discharge_exp.png" width="2278" height="944" alt="Simulated discharge of composition-matched boxes against the experimental curves for the 400 and 450 °C samples" loading="lazy">
     </figure>
@@ -193,6 +212,14 @@
 
     <p>Score = composition distance (S:N and H:N in units of a 0.15 tolerance) + RMS distance between the simulated and the experimental curve over the common capacity range (in units of 0.2 V) + half the mean-voltage distance (in units of 0.2 V). The top third of each generation is kept, one motif is swapped or two parents are recombined, and the new boxes go back to densification.</p>
 
+
+    <div class="interactive" id="evolution-viewer" hidden>
+      <h3>Generations closing in on the experiment</h3>
+      <p class="muted small">Step through the loop generation by generation. Violet dots are the boxes kept for the next generation, grey dots were dropped, and the orange star is the experiment. The middle chart overlays the best box of the generation on the measured curve; the right chart tracks the score. <span class="data-label"></span></p>
+      <div class="evo-grid"></div>
+      <p class="evo-legend small"></p>
+      <div class="evo-controls"></div>
+    </div>
     <figure>
       <img src="figures/fig_gen1_scores.png" width="2267" height="765" alt="Generation 1: one dot per mixture box, mean discharge voltage against capacity at Li/S = 2, and the best candidate's discharge curve against experiment" loading="lazy">
       <figcaption>Beyond about 450 mAh/g the two curves are not comparable: the cell stops at its 1.0 V cutoff with sulfur left unreduced, while the box runs to Li/S = 2.</figcaption>
@@ -215,6 +242,15 @@
       <img src="figures/fig_pocket_chem.png" width="1087" height="764" alt="A nitrogen pocket: a lithium ion held by four ring nitrogens in the DFT-relaxed structure" loading="lazy">
     </figure>
 
+
+    <div class="interactive" id="pocket-viewer" hidden>
+      <h3>Lithium held in a nitrogen pocket</h3>
+      <p class="muted small">The first cycle of one box, discharge then charge. The pocket nitrogens are enlarged in blue and the lithium they hold in magenta; the Li&ndash;N distances update every step. The shaded capacity on the curve is what does not come back below the charge cutoff. <span class="data-label"></span></p>
+      <div class="viewer-grid">
+        <div class="viewer-col"></div>
+        <div class="chart-col"></div>
+      </div>
+    </div>
     <p>Pockets of two to four ring nitrogens fill first, at 3 V and above, and need more than the 3 V charge cutoff to empty: 18 % of the first discharge stays in the C=S box. DFT check of the force field for the pocket shown: moving the lithium from the pocket to a sulfur site costs 2.38 eV by DFT (2.67 eV with HSE06) and 2.12 eV by MACE; the sign agrees in 8 of 9 boxes. Charge retraces discharge in the simulation because it carries no current; the gap between branches in a measured cell is kinetic.</p>
 
     <p>Discharge products seen in the trajectories: sulfur chains shorten stepwise through tethered S<sub>2</sub> and S<sub>3</sub> units (Li<sub>2</sub>S<sub>2</sub> and Li<sub>2</sub>S<sub>3</sub> analogues) and end as isolated sulfide units at Li/S = 2, 76 to 99 % of them still bonded to carbon or nitrogen with three to four lithium neighbours. No separate Li<sub>2</sub>S phase nucleates in a 1.5 nm box, and the cell cannot show one.</p>
@@ -231,7 +267,7 @@
         <h2>Compute</h2>
       </div>
     </div>
-    <p>VASP 6.3.2 on the Grace cluster (Texas A&amp;M HPRC). MACE training and dynamics on the Vision cluster (H200 GPUs). Battery500 Consortium, U.S. Department of Energy. Experimental samples and data were provided by experimental collaborators.</p>
+    <p>VASP 6.3.2, MACE training and MACE dynamics on Texas A&amp;M High Performance Research Computing (HPRC) clusters. Battery500 Consortium, U.S. Department of Energy. Experimental samples and data were provided by experimental collaborators.</p>
     <p>Contact: <a href="mailto:soniyuvraj@tamu.edu">soniyuvraj@tamu.edu</a></p>
   </section>
 
@@ -307,6 +343,8 @@
   <p class="lightbox-hint">Click anywhere to close</p>
 </div>
 
+<script id="lib3dmol" src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.0/3Dmol-min.js" defer></script>
 <script src="script.js"></script>
+<script src="interactive.js"></script>
 </body>
 </html>
