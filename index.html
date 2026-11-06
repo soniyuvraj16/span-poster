@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPAN multiscale framework</title>
+<meta name="description" content="Synthesis kinetics, structural evolution and cathode performance from DFT to kinetic Monte Carlo">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav" id="topnav" aria-label="Sections">
+  <div class="topnav-inner">
+    <a class="brand" href="#top">SPAN</a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#s1"><b>1</b> Introduction</a></li>
+      <li><a href="#s2"><b>2</b> Framework</a></li>
+      <li><a href="#s3"><b>3</b> Synthesis</a></li>
+      <li><a href="#s4"><b>4</b> Discharge curves</a></li>
+      <li><a href="#s5"><b>5</b> Evolutionary loop</a></li>
+      <li><a href="#s6"><b>6</b> Capacity loss</a></li>
+      <li><a href="#s7"><b>7</b> Compute</a></li>
+      <li><a href="#s8"><b>8</b> References</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="top">
+
+  <header class="card hero">
+    <p class="kicker">AIChE Annual Meeting 2026 &middot; poster companion page</p>
+    <h1>Multiscale Computational Framework for Sulfurized Polyacrylonitrile</h1>
+    <p class="subtitle">Synthesis kinetics, structural evolution and cathode performance from DFT to kinetic Monte Carlo</p>
+    <p class="authors">Yuvraj Soni and Perla B. Balbuena<br>
+      <span class="dept">Artie McFerrin Department of Chemical Engineering, Texas A&amp;M University</span></p>
+    <p class="lede">Poster presented at the AIChE Annual Meeting 2026. This page holds the simulation details and the references behind every number on the poster.</p>
+    <figure>
+      <img src="figures/poster_preview.png" width="1680" height="1680" alt="The full poster: nine panels on a lavender background" loading="eager">
+      <figcaption>The poster. Click to enlarge.</figcaption>
+    </figure>
+    <p class="note">References are collected in <a href="#s8">section 8</a> (numbered list) and cited in the text by number.</p>
+  </header>
+
+  <!-- 1 -->
+  <section class="card" id="s1">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">1</span>
+      <div>
+        <p class="kicker">Introduction</p>
+        <h2>What SPAN is and why it matters</h2>
+      </div>
+    </div>
+    <p>Sulfurized polyacrylonitrile (SPAN) is made by heating polyacrylonitrile with elemental sulfur. The backbone cyclizes into a fused pyridine ladder and sulfur binds to it covalently. Sulfur converts to Li<sub>2</sub>S solid to solid, nothing dissolves, and Li||SPAN cells cycle in carbonate electrolyte. SPAN is amorphous, so its bonding is inferred from spectroscopy and still debated: C&ndash;S<sub>x</sub>&ndash;C, N&ndash;S<sub>x</sub>&ndash;N and N&ndash;S<sub>x</sub>&ndash;C bridges between chains, C=S, intra-chain S rings and pendant C&ndash;S<sub>x</sub>&ndash;H chains have all been proposed.</p>
+    <figure>
+      <img src="figures/fig_span_structure.png" width="1518" height="1287" alt="Proposed bonding motifs of SPAN: three cyclized chains with C–Sx–C, N–Sx–N and N–Sx–C bridges, C=S, intra-chain S3 rings and a pendant C–Sx–H" loading="lazy">
+    </figure>
+    <p class="refs">References: Manthiram, Fu, Chung, Zu, Su, <em>Chem. Rev.</em> 114, 11751 (2014). Liu, Holoubek et al., <em>Mater. Today</em> 42, 17 (2021) (1,200 cycles, no capacity decay). Mukkabla and Buchmeiser, <em>J. Mater. Chem. A</em> 8, 5379 (2020) (structure review).</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="card" id="s2">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">2</span>
+      <div>
+        <p class="kicker">Methodology</p>
+        <h2>The framework</h2>
+      </div>
+    </div>
+    <figure>
+      <img src="figures/fig_framework.png" width="2158" height="2178" alt="The framework: DFT, reaction pathways, barrier checks and rates on the left; DFT labels, fine-tuned MACE force field, MACE dynamics and kinetic Monte Carlo on the right, with active-learning feedback" loading="lazy">
+    </figure>
+
+    <h3>DFT (VASP)</h3>
+    <ul>
+      <li>PBE-D3(BJ), PAW, Li_sv pseudopotential, plane-wave cutoff 900 eV (800 eV converges energies and forces, 900 eV converges stress).</li>
+      <li>Labels: PREC Accurate, LREAL .FALSE., EDIFF 1e-6 eV, ISMEAR 0, SIGMA 0.05, ISYM 0.</li>
+      <li>Sampling (AIMD only): PREC Normal, LREAL Auto, EDIFF 1e-5, NVT Nos&eacute;&ndash;Hoover, 1 fs step.</li>
+      <li>Spin: ISPIN 2 with NUPDOWN pinned for every cell (free spin lets the moment hop between sulfur atoms and injects 100 to 300 meV/&Aring; of noise into forces).</li>
+      <li>&Gamma;-point only (vasp_gam), validated against a 3&times;1&times;1 mesh on the training cells.</li>
+      <li>Hybrid checks: HSE06 single points on the PBE reaction paths and on the small nitrogen-pocket cell.</li>
+      <li>Reaction paths: climbing-image nudged elastic band, 5 to 6 images, spring &minus;5 eV/&Aring;&sup2;. Cyclization barriers are cluster free energies (Gaussian, M06-2X/6-311+G(d,p), 573 to 723 K).</li>
+    </ul>
+
+    <h3>Force field (MACE)</h3>
+    <ul>
+      <li>Base model MACE-OMAT-0 medium (r_max 6 &Aring;, 2 layers, L = 1, 128 channels), fine-tuned on our DFT labels. MACE-MPA-0 tied within 4 % and is kept as the committee partner. MACE-OFF (&omega;B97M, gas phase) was tested and dropped.</li>
+      <li>Loss weights energy : forces : stress = 1 : 100 : 1, learning rate 1e-3, 200 epochs, exponential moving average 0.99, float64 training, float32 at inference.</li>
+      <li>Isolated-atom reference energies computed at the same DFT level, with Hund's-rule spin pinned.</li>
+      <li>Four training rounds: 5.1k, 12.2k, 16.3k and 19.8k frames; held-out error 7.5 meV/atom and 52 &rarr; 32 meV/&Aring; across the rounds. On reaction paths never used in training the model reproduces barriers within 0.1 to 0.3 eV.</li>
+    </ul>
+    <figure>
+      <img src="figures/fig_rounds.png" width="2647" height="917" alt="Four MACE training rounds: frame count grows from 5.1k to 19.8k and the held-out force error falls from 52 to 32 meV per angstrom" loading="lazy">
+    </figure>
+
+    <h3>Kinetic Monte Carlo</h3>
+    <p>Gillespie reaction network with rates <span class="eq">k = A exp(&minus;E<sub>a</sub> / k<sub>B</sub>T)</span>, barriers from the NEB catalog (HSE06-corrected where available). Used for ratios between channels, not for absolute times.</p>
+  </section>
+
+  <!-- 3 -->
+  <section class="card" id="s3">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">3</span>
+      <div>
+        <p class="kicker">Synthesis</p>
+        <h2>Synthesis: competing pathways and the role of nitrogen</h2>
+      </div>
+    </div>
+    <figure>
+      <img src="figures/fig_pathways2.png" width="2717" height="1671" alt="Reaction network for SPAN synthesis: backbone cyclization, sulfur activation at pyridinic nitrogen, C–S formation with H2S release, and the closed channels; bar chart of every barrier on one axis" loading="lazy">
+    </figure>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>step</th><th>barrier</th><th>method</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>thermal cyclization</td><td>1.06 to 1.13 eV (&Delta;G<sup>&Dagger;</sup>, 573 to 723 K)</td><td>cluster, M06-2X</td></tr>
+        <tr><td>sulfur-initiated cyclization</td><td>1.00 to 1.06 eV</td><td>cluster, M06-2X</td></tr>
+        <tr><td>sulfur on a nitrile carbon before cyclization</td><td>1.2 eV, +1.6 eV uphill</td><td>cluster, M06-2X</td></tr>
+        <tr><td>S<sub>8</sub> ring opening, free</td><td>1.64 eV (HSE06 1.71)</td><td>periodic NEB</td></tr>
+        <tr><td>S<sub>8</sub> ring opening at pyridinic N</td><td>0.89 eV (HSE06 0.57)</td><td>periodic NEB</td></tr>
+        <tr><td>concerted C&ndash;S formation with H transfer, S<sub>2</sub> / S<sub>4</sub> / S<sub>6</sub> / S<sub>8</sub></td><td>0.52 / 0.71 / 0.32 / 1.02 eV</td><td>periodic NEB</td></tr>
+        <tr><td>stepwise H abstraction by S<sub>2</sub>&bull;</td><td>2.17 eV</td><td>cluster, M06-2X</td></tr>
+        <tr><td>ring opening + C&ndash;S + H transfer in one step</td><td>&ge; 3.4 eV</td><td>periodic NEB</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The measured S&ndash;S bond enthalpy of S<sub>8</sub> is 1.75 eV, which the free-ring value reproduces.</p>
+
+    <p><strong>Why nitrogen activates sulfur:</strong> the in-plane sp&sup2; lone pair of a pyridinic nitrogen donates into the S&ndash;S &sigma;* orbital of S<sub>8</sub> (an S<sub>N</sub>2 displacement at sulfur), so an N&ndash;S bond forms while the S&ndash;S bond breaks. The transition state is a bond exchange rather than a bond loss, the leaving polysulfide charge is delocalized along the chain, and the result is a stabilized zwitterion. This is the classical amine and phosphine activation of S<sub>8</sub> and the chemistry behind nitrogen-based vulcanization accelerators.</p>
+
+    <p class="refs">References: Bartlett and Meguerian, <em>J. Am. Chem. Soc.</em> 78, 3710 (1956). Davis and Nakshbendi, <em>J. Am. Chem. Soc.</em> 84, 2085 (1962). Zhang, Konopka, Glass, Char, Pyun, <em>J. Polym. Sci. A</em> 57, 7 (2019). Sharma and Champagne, <em>Chem. Eur. J.</em> 29, e202203906 (2023). Order of events in experiment: Wang et al., <em>Nat. Mater.</em> 25, 791 (2026) (operando scattering); Liu et al., <em>Adv. Mater.</em> 37, 2503534 (2025); Frey et al., <em>ACS Energy Lett.</em> 2, 595 (2017); Mao et al., <em>Appl. Surf. Sci.</em> 447, 235 (2018); Zhang, <em>Energies</em> 7, 4588 (2014).</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="card" id="s4">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">4</span>
+      <div>
+        <p class="kicker">Cathode performance</p>
+        <h2>Discharge curves from structure alone</h2>
+      </div>
+    </div>
+    <figure>
+      <img src="figures/fig_voltage_pipeline.png" width="2198" height="603" alt="Five-step voltage pipeline: insert a batch of Li, anneal and relax, energy of the box, step voltage, capacity axis" loading="lazy">
+    </figure>
+
+    <h3>Boxes</h3>
+    <p>Each electrode box holds four pairs of cyclized-PAN chains carrying a chosen mix of sulfur motifs, packed loosely (about 1.0 g/cm&sup3;) to avoid overlaps and then compressed with the force field (NPT, 1 atm, 300 K) to its equilibrium density, about 1.55 g/cm&sup3;. Final cell about 14 &times; 16 &times; 16 &Aring;, 240 to 250 atoms before lithium. Boxes whose bond table changed on densification (opened N&ndash;S bridges, bare chains) are rejected.</p>
+
+    <h3>Lithiation protocol</h3>
+    <ol>
+      <li>Insert a batch of lithium: 5 % of the final lithium count, 2 to 3 atoms, at the most favourable sites (nitrogen pockets first, then S&ndash;S and C&ndash;S).</li>
+      <li>Anneal 2 ps with a Langevin thermostat at 300 K, then 4 ps NPT at 1 atm, then relax with FIRE (a damped-dynamics geometry optimizer) to forces below 0.1 eV/&Aring;.</li>
+      <li>Take the energy E(Li<sub>n</sub> SPAN). The free energy is approximated by this 0 K energy; entropy and pV terms are below 0.05 V.</li>
+      <li>Step voltage: <span class="eq">V<sub>step</sub> = &minus;[E(Li<sub>n</sub>) &minus; E(Li<sub>n&minus;k</sub>) &minus; k&nbsp;E<sub>Li</sub>] / k</span>, with E<sub>Li</sub> the energy per atom of bcc lithium at the same DFT level.</li>
+      <li>Capacity: <span class="eq">Q = n F / M<sub>SPAN</sub></span> in mAh per gram of lithium-free SPAN. Repeat to Li/S = 2.</li>
+    </ol>
+
+    <p>One &ldquo;insertion order&rdquo; is one complete run from pristine to Li/S = 2 with its own random choice among candidate sites at every step. Each box is run with 30 insertion orders (18 to 24 steps each, about 600 relaxed configurations and about 4 ns of dynamics per box). The curve on the poster is the mean over the 30 orders and the band is one standard deviation. Charge is the same equation run backwards, removing the cheapest lithium first.</p>
+
+    <figure>
+      <img src="figures/fig_discharge_exp.png" width="2278" height="944" alt="Simulated discharge of composition-matched boxes against the experimental curves for the 400 and 450 °C samples" loading="lazy">
+    </figure>
+    <figure>
+      <img src="figures/fig_voltage_mix.png" width="1233" height="1014" alt="Mean discharge voltage to Li/S = 2 for each motif and for the two matched mixtures, compared with the experimental mean voltage of 1.79 V" loading="lazy">
+      <figcaption>The experimental curves are reversible (later-cycle) curves reconstructed by integrating measured dQ/dV. Simulated voltages are equilibrium (zero-current) values; a cell at finite rate adds an overpotential that grows at the end of discharge.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5 -->
+  <section class="card" id="s5">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">5</span>
+      <div>
+        <p class="kicker">Structural evolution</p>
+        <h2>The evolutionary framework loop</h2>
+      </div>
+    </div>
+    <figure>
+      <img src="figures/fig_evo_loop.png" width="2698" height="1060" alt="The evolutionary loop: generate, densify, lithiate, score, then select and mutate" loading="lazy">
+    </figure>
+
+    <p>Every proposed motif was built as a periodic cell, relaxed at the same DFT level and included in training, so the force field knows every bonding type. Generation 1: all 39 four-pair mixtures of the ten motifs inside S:N 1.05 to 1.55 and H:N 0.35 to 0.95, 78 boxes run in parallel on 78 GPUs.</p>
+
+    <p>Score = composition distance (S:N and H:N in units of a 0.15 tolerance) + RMS distance between the simulated and the experimental curve over the common capacity range (in units of 0.2 V) + half the mean-voltage distance (in units of 0.2 V). The top third of each generation is kept, one motif is swapped or two parents are recombined, and the new boxes go back to densification.</p>
+
+    <figure>
+      <img src="figures/fig_gen1_scores.png" width="2267" height="765" alt="Generation 1: one dot per mixture box, mean discharge voltage against capacity at Li/S = 2, and the best candidate's discharge curve against experiment" loading="lazy">
+      <figcaption>Beyond about 450 mAh/g the two curves are not comparable: the cell stops at its 1.0 V cutoff with sulfur left unreduced, while the box runs to Li/S = 2.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 6 -->
+  <section class="card" id="s6">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">6</span>
+      <div>
+        <p class="kicker">Irreversible capacity loss</p>
+        <h2>Irreversible capacity loss</h2>
+      </div>
+    </div>
+    <figure>
+      <img src="figures/fig_trapping2.png" width="1594" height="936" alt="First cycle of one box: discharge and charge curves; the lithium in nitrogen pockets needs more than 3 V to leave" loading="lazy">
+    </figure>
+    <figure>
+      <img src="figures/fig_pocket_chem.png" width="1087" height="764" alt="A nitrogen pocket: a lithium ion held by four ring nitrogens in the DFT-relaxed structure" loading="lazy">
+    </figure>
+
+    <p>Pockets of two to four ring nitrogens fill first, at 3 V and above, and need more than the 3 V charge cutoff to empty: 18 % of the first discharge stays in the C=S box. DFT check of the force field for the pocket shown: moving the lithium from the pocket to a sulfur site costs 2.38 eV by DFT (2.67 eV with HSE06) and 2.12 eV by MACE; the sign agrees in 8 of 9 boxes. Charge retraces discharge in the simulation because it carries no current; the gap between branches in a measured cell is kinetic.</p>
+
+    <p>Discharge products seen in the trajectories: sulfur chains shorten stepwise through tethered S<sub>2</sub> and S<sub>3</sub> units (Li<sub>2</sub>S<sub>2</sub> and Li<sub>2</sub>S<sub>3</sub> analogues) and end as isolated sulfide units at Li/S = 2, 76 to 99 % of them still bonded to carbon or nitrogen with three to four lithium neighbours. No separate Li<sub>2</sub>S phase nucleates in a 1.5 nm box, and the cell cannot show one.</p>
+
+    <p class="refs">References: Wang et al., <em>J. Am. Chem. Soc.</em> (2023), doi <a href="https://doi.org/10.1021/jacs.3c00628">10.1021/jacs.3c00628</a> (Li 1s 53.2 eV and N 1s 398.2 eV after discharge, partial recovery on charge; discharge curves of 450 &deg;C SPAN). Kuai et al. (2024), Raman 600 cm<sup>&minus;1</sup> Li&ndash;N. Perez Beltran and Balbuena (2021); Sapkota et al. (2023).</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="card" id="s7">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">7</span>
+      <div>
+        <p class="kicker">Compute and acknowledgements</p>
+        <h2>Compute</h2>
+      </div>
+    </div>
+    <p>VASP 6.3.2 on the Grace cluster (Texas A&amp;M HPRC). MACE training and dynamics on the Vision cluster (H200 GPUs). Battery500 Consortium, U.S. Department of Energy. Experimental samples and data were provided by experimental collaborators.</p>
+    <p>Contact: <a href="mailto:soniyuvraj@tamu.edu">soniyuvraj@tamu.edu</a></p>
+  </section>
+
+  <!-- 8 -->
+  <section class="card" id="s8">
+    <div class="section-head">
+      <span class="badge" aria-hidden="true">8</span>
+      <div>
+        <p class="kicker">References</p>
+        <h2>References</h2>
+      </div>
+    </div>
+
+    <h3>SPAN: material, structure and electrochemistry</h3>
+    <ol class="reflist" start="1">
+      <li id="ref1">A. Manthiram, Y. Fu, S.-H. Chung, C. Zu, Y.-S. Su, &ldquo;Rechargeable lithium&ndash;sulfur batteries&rdquo;, <em>Chem. Rev.</em> 114, 11751&ndash;11787 (2014). Sulfur capacity 1,675 mAh/g, Li&ndash;S theoretical energy density 2,600 Wh/kg, polysulfide shuttle.</li>
+      <li id="ref2">H. Liu, J. Holoubek, H. Zhou, A. Chen, N. Chang, Z. Wu, S. Yu, Q. Yan, X. Xing, Y. Li, T. A. Pascal, P. Liu, &ldquo;Ultrahigh coulombic efficiency electrolyte enables Li||SPAN batteries with superior cycling performance&rdquo;, <em>Mater. Today</em> 42, 17&ndash;28 (2021), doi <a href="https://doi.org/10.1016/j.mattod.2020.09.035">10.1016/j.mattod.2020.09.035</a>. 1,200 cycles with no capacity decay.</li>
+      <li id="ref3">P. Mukkabla, M. R. Buchmeiser, &ldquo;Cathode materials for lithium&ndash;sulfur batteries based on sulfur covalently bound to a polymeric backbone&rdquo;, <em>J. Mater. Chem. A</em> 8, 5379&ndash;5394 (2020). Structure review; SPAN is amorphous.</li>
+      <li id="ref4">S. Wang, B. Lu, D. Cheng, Z. Wu, S. Feng, M. Zhang, W. Li, Q. Miao, M. Patel, J. Feng, E. Hopkins, J. Zhou, S. Parab, B. Bhamwala, B. Liaw, Y. S. Meng, H. Liu, &ldquo;Structural transformation in a sulfurized polymer cathode to enable long-life rechargeable lithium&ndash;sulfur batteries&rdquo;, <em>J. Am. Chem. Soc.</em> 145 (2023), doi <a href="https://doi.org/10.1021/jacs.3c00628">10.1021/jacs.3c00628</a>. Discharge curves of 450 &deg;C SPAN (Fig. 6d), Li 1s 53.2 eV and N 1s 398.2 eV after discharge with partial recovery on charge.</li>
+      <li id="ref5">J. Wang, J. Yang, J. Xie, N. Xu, &ldquo;A novel conductive polymer&ndash;sulfur composite cathode material for rechargeable lithium batteries&rdquo;, <em>Adv. Mater.</em> 14, 963&ndash;965 (2002); J. Wang et al., <em>Adv. Funct. Mater.</em> 13, 487 (2003). Original SPAN synthesis.</li>
+      <li id="ref6">J. Fanous, M. Wegner, J. Grimminger, &Auml;. Andresen, M. R. Buchmeiser, &ldquo;Structure-related electrochemistry of sulfur-poly(acrylonitrile) composite cathode materials for rechargeable lithium batteries&rdquo;, <em>Chem. Mater.</em> 23, 5024&ndash;5028 (2011).</li>
+      <li id="ref7">S. Wei, L. Ma, K. E. Hendrickson, Z. Tu, L. A. Archer, &ldquo;Metal&ndash;sulfur battery cathodes based on PAN&ndash;sulfur composites&rdquo;, <em>J. Am. Chem. Soc.</em> 137, 12143&ndash;12152 (2015).</li>
+      <li id="ref8">N. Wang et al. (with P. B. Balbuena, P. Liu, E. Hu), operando total scattering and S K-edge study of SPAN synthesis, <em>Nat. Mater.</em> 25, 791 (2026). Sulfur radicals drive cyclization; C&ndash;S bonds form on the cyclized chain and halt further fusion.</li>
+      <li id="ref9">X. Liu et al. (NuLi, Duan, J. Wang), &ldquo;Formation mechanism and molecular structure of sulfurized polyacrylonitrile&rdquo;, <em>Adv. Mater.</em> 37, e2503534 (2025). S<sub>2</sub> diradical first, dehydrogenation and cyclization, C&ndash;S and N&ndash;S last; 63.5 wt % sulfur ceiling.</li>
+      <li id="ref10">M. Frey, R. K. Zenn, S. Warneke, K. M&uuml;ller, A. Hintennach, R. E. Dinnebier, M. R. Buchmeiser, &ldquo;Easily accessible, textile fiber-based sulfurized poly(acrylonitrile) as Li/S cathode material&rdquo;, <em>ACS Energy Lett.</em> 2, 595&ndash;604 (2017); S. Warneke et al., <em>J. Electrochem. Soc.</em> 165, A6017 (2018). Sulfur attacks the nitrile first.</li>
+      <li id="ref11">C. Mao et al., &ldquo;Mechanism of the sulfurization of polyacrylonitrile&rdquo;, <em>Appl. Surf. Sci.</em> 447, 235 (2018). Cyclization first.</li>
+      <li id="ref12">S. S. Zhang, &ldquo;Understanding of sulfurized polyacrylonitrile for superior performance lithium/sulfur battery&rdquo;, <em>Energies</em> 7, 4588&ndash;4600 (2014). Sulfur as dehydrogenation agent; H<sub>2</sub>S evolution 300&ndash;400 &deg;C.</li>
+      <li id="ref13">&ldquo;New insights into the N&ndash;S bond formation of a sulfurized-polyacrylonitrile cathode&rdquo;, <em>ACS Appl. Mater. Interfaces</em> 13 (2021), doi <a href="https://doi.org/10.1021/acsami.0c22811">10.1021/acsami.0c22811</a>. XPS, ssNMR and DFT evidence for N&ndash;S bonds.</li>
+      <li id="ref14">J. Huang, Y. Cheng et al., &ldquo;Origin of shuttle-free sulfurized polyacrylonitrile&rdquo;, <em>J. Power Sources</em> 492, 229508 (2021). N&ndash;S<sub>x</sub>&ndash;N bridges with x &lt; 4.</li>
+      <li id="ref15">&ldquo;Delaying cyclization of polyacrylonitrile by boric acid for sulfurized poly(acrylonitrile) cathode materials&rdquo;, <em>Chem. Eng. J.</em> (2024), <a href="https://www.sciencedirect.com/science/article/pii/S1385894724083487">S1385894724083487</a>. Delayed cyclization raises sulfur content to 54 wt %.</li>
+      <li id="ref16">He et al., thermal analysis of PAN/sulfur mixtures, <em>J. Therm. Anal. Calorim.</em> 94, 151 (2008).</li>
+      <li id="ref17">Kuai et al., Raman signature of Li&ndash;N at 600 cm<sup>&minus;1</sup> in discharged SPAN (2024).</li>
+      <li id="ref18">S. Perez Beltran, P. B. Balbuena, mechanical and structural properties of SPAN, OSTI 1838885 (2021); D. Sapkota et al. (2023).</li>
+    </ol>
+
+    <h3>Nitrogen activation of S<sub>8</sub></h3>
+    <ol class="reflist" start="19">
+      <li id="ref19">P. D. Bartlett, G. Meguerian, &ldquo;Reactions of elemental sulfur. I. The uncatalyzed reaction of sulfur with triarylphosphines&rdquo;, <em>J. Am. Chem. Soc.</em> 78, 3710 (1956). Nucleophilic ring opening of S<sub>8</sub> to a zwitterion is rate determining.</li>
+      <li id="ref20">R. E. Davis, H. F. Nakshbendi, &ldquo;Sulfur in amine solvents&rdquo;, <em>J. Am. Chem. Soc.</em> 84, 2085 (1962). Amines open S<sub>8</sub>.</li>
+      <li id="ref21">Y. Zhang, K. M. Konopka, R. S. Glass, K. Char, J. Pyun, &ldquo;Chalcogenide hybrid inorganic/organic polymers (CHIPs) via inverse vulcanization and dynamic covalent polymerisation&rdquo;, <em>J. Polym. Sci. A</em> 57, 7 (2019). Amine and N-methylimidazole activation of S<sub>8</sub> to sulfobetaine intermediates.</li>
+      <li id="ref22">S. Sharma, P. A. Champagne, &ldquo;Mechanistic investigation of nucleophilic S<sub>8</sub> ring opening&rdquo;, <em>Chem. Eur. J.</em> 29, e202203906 (2023). S<sub>N</sub>2 at sulfur, first opening rate determining.</li>
+      <li id="ref23">R. Conen, M. A. R. Meier, &ldquo;Reactivities and mechanisms in organic reactions involving activation of elemental sulfur under basic conditions&rdquo;, <em>Tetrahedron Chem</em> 11, 100086 (2024).</li>
+      <li id="ref24">&ldquo;Nucleophilic activation of the sulfur S<sub>8</sub> cyclic form as a green chemistry tool&rdquo;, <em>Russ. Chem. Bull.</em> (2023), doi <a href="https://doi.org/10.1007/s11172-023-3809-9">10.1007/s11172-023-3809-9</a>.</li>
+    </ol>
+
+    <h3>Methods</h3>
+    <ol class="reflist" start="25">
+      <li id="ref25">G. Kresse, J. Furthm&uuml;ller, &ldquo;Efficient iterative schemes for ab initio total-energy calculations using a plane-wave basis set&rdquo;, <em>Phys. Rev. B</em> 54, 11169 (1996); G. Kresse, D. Joubert, <em>Phys. Rev. B</em> 59, 1758 (1999). VASP and PAW.</li>
+      <li id="ref26">J. P. Perdew, K. Burke, M. Ernzerhof, &ldquo;Generalized gradient approximation made simple&rdquo;, <em>Phys. Rev. Lett.</em> 77, 3865 (1996). PBE.</li>
+      <li id="ref27">S. Grimme, J. Antony, S. Ehrlich, H. Krieg, <em>J. Chem. Phys.</em> 132, 154104 (2010); S. Grimme, S. Ehrlich, L. Goerigk, <em>J. Comput. Chem.</em> 32, 1456 (2011). D3 dispersion with Becke&ndash;Johnson damping.</li>
+      <li id="ref28">J. Heyd, G. E. Scuseria, M. Ernzerhof, <em>J. Chem. Phys.</em> 118, 8207 (2003); A. V. Krukau et al., <em>J. Chem. Phys.</em> 125, 224106 (2006). HSE06.</li>
+      <li id="ref29">G. Henkelman, B. P. Uberuaga, H. J&oacute;nsson, &ldquo;A climbing image nudged elastic band method for finding saddle points and minimum energy paths&rdquo;, <em>J. Chem. Phys.</em> 113, 9901 (2000).</li>
+      <li id="ref30">Y. Zhao, D. G. Truhlar, &ldquo;The M06 suite of density functionals&rdquo;, <em>Theor. Chem. Acc.</em> 120, 215 (2008). M06-2X for the cluster free energies (Gaussian 16).</li>
+      <li id="ref31">I. Batatia, D. P. Kov&aacute;cs, G. N. C. Simm, C. Ortner, G. Cs&aacute;nyi, &ldquo;MACE: higher order equivariant message passing neural networks for fast and accurate force fields&rdquo;, <em>NeurIPS</em> 35 (2022).</li>
+      <li id="ref32">I. Batatia et al., &ldquo;A foundation model for atomistic materials chemistry&rdquo;, <a href="https://arxiv.org/abs/2401.00096">arXiv:2401.00096</a> (2023). MACE-MP-0.</li>
+      <li id="ref33">L. Barroso-Luque, M. Shuaibi, X. Fu, B. M. Wood, M. Dzamba, M. Gao, A. Rizvi, C. L. Zitnick, Z. W. Ulissi, &ldquo;Open Materials 2024 (OMat24) inorganic materials dataset and models&rdquo;, <a href="https://arxiv.org/abs/2410.12771">arXiv:2410.12771</a> (2024). The OMat24 data behind MACE-OMAT-0.</li>
+      <li id="ref34">A. Hjorth Larsen et al., &ldquo;The atomic simulation environment&rdquo;, <em>J. Phys.: Condens. Matter</em> 29, 273002 (2017). ASE, used for lithiation, NPT and FIRE.</li>
+      <li id="ref35">E. Bitzek, P. Koskinen, F. G&auml;hler, M. Moseler, P. Gumbsch, &ldquo;Structural relaxation made simple&rdquo;, <em>Phys. Rev. Lett.</em> 97, 170201 (2006). FIRE optimizer.</li>
+      <li id="ref36">H. J. C. Berendsen et al., &ldquo;Molecular dynamics with coupling to an external bath&rdquo;, <em>J. Chem. Phys.</em> 81, 3684 (1984). Berendsen barostat.</li>
+      <li id="ref37">D. T. Gillespie, &ldquo;Exact stochastic simulation of coupled chemical reactions&rdquo;, <em>J. Phys. Chem.</em> 81, 2340 (1977). Kinetic Monte Carlo.</li>
+      <li id="ref38">L. Mart&iacute;nez, R. Andrade, E. G. Birgin, J. M. Mart&iacute;nez, &ldquo;PACKMOL: a package for building initial configurations for molecular dynamics simulations&rdquo;, <em>J. Comput. Chem.</em> 30, 2157 (2009).</li>
+      <li id="ref39">W. Tang, E. Sanville, G. Henkelman, &ldquo;A grid-based Bader analysis algorithm without lattice bias&rdquo;, <em>J. Phys.: Condens. Matter</em> 21, 084204 (2009).</li>
+    </ol>
+  </section>
+
+  <footer class="site-footer">
+    <p>Yuvraj Soni, Texas A&amp;M University, 2026 &middot; <a href="mailto:soniyuvraj@tamu.edu">soniyuvraj@tamu.edu</a></p>
+  </footer>
+</main>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Enlarged figure">
+  <img id="lightboxImg" src="" alt="">
+  <p class="lightbox-hint">Click anywhere to close</p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
