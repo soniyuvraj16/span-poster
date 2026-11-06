@@ -51,6 +51,7 @@
     function stop() { playing = false; btn.textContent = 'Play'; if (timer) { clearInterval(timer); timer = null; } }
     function start() {
       if (nFrames < 2) return;
+      if (frame >= nFrames - 1) show(0);
       playing = true; btn.textContent = 'Pause';
       var period = Math.max(40, (opts.periodMs || 180) / parseFloat(speed.value));
       timer = setInterval(function () {
@@ -62,7 +63,7 @@
     btn.addEventListener('click', function () { if (playing) stop(); else start(); });
     range.addEventListener('input', function () { stop(); show(parseInt(range.value, 10)); });
     speed.addEventListener('change', function () { if (playing) { stop(); start(); } });
-    if (reduceMotion) { btn.disabled = true; btn.title = 'Playback is off because your system asks for reduced motion. Use the slider.'; }
+    if (reduceMotion) { btn.disabled = true; btn.title = 'Playback is off because your system asks for reduced motion. Use the slider.'; var hint = el('span', 'player-hint', 'Playback is off because your system asks for reduced motion; drag the slider.'); bar.appendChild(hint); }
     show(0);
     return { show: show, stop: stop, el: bar };
   }
@@ -391,21 +392,30 @@
     var gx = gens.map(function (g) { return g.generation; });
     var score = makeChart(scoreC, { series: [{ x: gx, y: best, color: PAL.violet, label: 'best box', labelAt: 0.5 }, { x: gx, y: median, color: PAL.grey, label: 'median box', labelAt: 0.5 }], xlabel: 'generation', ylabel: 'score (lower is closer)', height: 280, xint: true, xlim: [gx[0] - 0.5, gx[gx.length - 1] + 0.5] });
     function motifText(b) { return b.motifs ? Object.keys(b.motifs).map(function (k) { return b.motifs[k] + '/4 ' + k; }).join(', ') : ''; }
-    function showGen(i) {
-      var g = gens[i];
-      var pts = g.boxes.map(function (b) { return { x: b.capacity_mAh_g, y: b.mean_voltage_V, color: b.kept ? PAL.violet : '#bdb9cc', r: b.kept ? 6 : 4.5, tip: (b.id || 'box') + ': ' + fmt(b.mean_voltage_V, 2) + ' V, ' + fmt(b.capacity_mAh_g, 0) + ' mAh/g' + (b.score != null ? ', score ' + fmt(b.score, 2) : '') + (b.motifs ? ' · ' + motifText(b) : '') }; });
-      pts.push({ x: exp.capacity_mAh_g, y: exp.mean_voltage_V, color: PAL.orange, star: true, label: 'experiment', tip: 'experiment: ' + fmt(exp.mean_voltage_V, 2) + ' V, ' + fmt(exp.capacity_mAh_g, 0) + ' mAh/g' });
-      scatter.state.points = pts; scatter.draw();
-      var bestBox = null; g.boxes.forEach(function (b) { if (b.id === g.best_id || (!g.best_id && b.curve && (!bestBox || (b.score != null && b.score < bestBox.score)))) bestBox = b; });
-      var series = [{ x: exp.capacity_mAh_g_curve || exp.curve.capacity_mAh_g, y: exp.curve.voltage_V, color: PAL.ink, width: 1.5, dash: [5, 4], label: 'experiment', labelAt: 0.3 }];
-      if (bestBox && bestBox.curve) series.push({ x: bestBox.curve.capacity_mAh_g, y: bestBox.curve.voltage_V, band: bestBox.curve.band_V || null, color: PAL.aqua, label: 'best: ' + (bestBox.id || ''), labelAt: 0.55 });
+    function boxTip(b) { return (b.id || 'box') + ': ' + fmt(b.mean_voltage_V, 2) + ' V, ' + fmt(b.capacity_mAh_g, 0) + ' mAh/g' + (b.score != null ? ', score ' + fmt(b.score, 2) : '') + (b.motifs ? ' · ' + motifText(b) : ''); }
+    /* Frames: within each generation the boxes appear one by one from the worst score to the best,
+       so the population visibly converges on the experiment; then the next generation starts. */
+    var ranked = gens.map(function (g) { return g.boxes.slice().sort(function (a, b) { var sa = a.score == null ? Infinity : a.score, sb = b.score == null ? Infinity : b.score; return sb - sa; }); });
+    var frames = [];
+    gens.forEach(function (g, gi) { for (var k = 1; k <= g.boxes.length; k++) frames.push({ gi: gi, k: k }); });
+    var expPts = { x: exp.capacity_mAh_g, y: exp.mean_voltage_V, color: PAL.orange, star: true, label: 'experiment', tip: 'experiment: ' + fmt(exp.mean_voltage_V, 2) + ' V, ' + fmt(exp.capacity_mAh_g, 0) + ' mAh/g' };
+    var expCurve = { x: exp.curve.capacity_mAh_g, y: exp.curve.voltage_V, color: PAL.ink, width: 1.5, dash: [5, 4], label: 'experiment', labelAt: 0.3 };
+    function showFrame(fi) {
+      var f = frames[fi], g = gens[f.gi], shown = ranked[f.gi].slice(0, f.k), current = shown[shown.length - 1];
+      var pts = shown.map(function (b, idx) { var isCur = idx === shown.length - 1; return { x: b.capacity_mAh_g, y: b.mean_voltage_V, color: b.kept ? PAL.violet : '#bdb9cc', r: isCur ? 8 : (b.kept ? 6 : 4.5), tip: boxTip(b), label: isCur ? (b.id || '') : null }; });
+      pts.push(expPts); scatter.state.points = pts; scatter.draw();
+      var withCurve = null; for (var i = shown.length - 1; i >= 0; i--) { if (shown[i].curve) { withCurve = shown[i]; break; } }
+      var series = [expCurve];
+      if (withCurve) series.push({ x: withCurve.curve.capacity_mAh_g, y: withCurve.curve.voltage_V, band: withCurve.curve.band_V || null, color: PAL.aqua, label: (withCurve === current ? '' : 'best so far: ') + (withCurve.id || ''), labelAt: 0.55 });
       curve.state.series = series; curve.draw();
-      score.state.marker = best[i] != null ? { x: g.generation, y: best[i] } : null; score.draw();
+      score.state.marker = best[f.gi] != null ? { x: g.generation, y: best[f.gi] } : null; score.draw();
       var kept = g.boxes.filter(function (b) { return b.kept; }).length;
-      var legend = $('.evo-legend', block); legend.textContent = 'Generation ' + g.generation + ': ' + (g.n_submitted ? g.n_submitted + ' packings submitted, ' : '') + (g.n_densified ? g.n_densified + ' survived densification, ' : '') + g.boxes.length + ' boxes scored, ' + kept + ' kept' + (bestBox ? ' · best ' + (bestBox.id || '') + (bestBox.motifs ? ' (' + motifText(bestBox) + ')' : '') + (bestBox.score != null ? ', score ' + fmt(bestBox.score, 2) : '') : '');
-      return 'generation ' + g.generation + ' of ' + gens[gens.length - 1].generation;
+      var legend = $('.evo-legend', block);
+      legend.textContent = 'Generation ' + g.generation + ': ' + (g.n_submitted ? g.n_submitted + ' packings submitted, ' : '') + (g.n_densified ? g.n_densified + ' survived densification, ' : '') + g.boxes.length + ' boxes scored, ' + kept + ' kept · showing ' + f.k + ' of ' + g.boxes.length + ', worst to best · ' + (current.id || '') + (current.score != null ? ' score ' + fmt(current.score, 2) : '') + (current.kept ? ' (kept)' : ' (dropped)') + (current.motifs ? ' · ' + motifText(current) : '');
+      return 'generation ' + g.generation + ' of ' + gens[gens.length - 1].generation + ' · box ' + f.k + ' / ' + g.boxes.length;
     }
-    makePlayer($('.evo-controls', block), gens.length, showGen, { periodMs: 1400, loop: false, label: 'Generation' });
+    var player = makePlayer($('.evo-controls', block), frames.length, showFrame, { periodMs: 220, loop: false, label: 'Box' });
+    player.show(frames.length - 1);
     if (data.score_definition) $('.data-label', block).textContent = data.score_definition;
   }
 
