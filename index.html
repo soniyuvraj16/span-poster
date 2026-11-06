@@ -56,7 +56,7 @@
         <h2>What SPAN is and why it matters</h2>
       </div>
     </div>
-    <p>Sulfurized polyacrylonitrile (SPAN) is made by heating polyacrylonitrile with elemental sulfur. The backbone cyclizes into a fused pyridine ladder and sulfur binds to it covalently. Sulfur converts to Li<sub>2</sub>S solid to solid, nothing dissolves, and Li||SPAN cells cycle in carbonate electrolyte. SPAN is amorphous, so its bonding is inferred from spectroscopy and still debated: C&ndash;S<sub>x</sub>&ndash;C, N&ndash;S<sub>x</sub>&ndash;N and N&ndash;S<sub>x</sub>&ndash;C bridges between chains, C=S, intra-chain S rings and pendant C&ndash;S<sub>x</sub>&ndash;H chains have all been proposed.</p>
+    <p>Sulfurized polyacrylonitrile (SPAN) is made by heating polyacrylonitrile with elemental sulfur. The backbone cyclizes into a fused pyridine ladder and sulfur binds to it covalently. Sulfur converts to lithium sulfide species solid to solid, nothing dissolves, SPAN delivers about 600 to 700 mAh/g near 1.8 V, and Li||SPAN cells have run 1,200 cycles with no capacity decay. SPAN is amorphous, so its bonding is inferred from spectroscopy and still debated: C&ndash;S<sub>x</sub>&ndash;C, N&ndash;S<sub>x</sub>&ndash;N and N&ndash;S<sub>x</sub>&ndash;C bridges between chains, C=S, intra-chain S rings and pendant C&ndash;S<sub>x</sub>&ndash;H chains have all been proposed.</p>
     <figure>
       <img src="figures/fig_span_structure.png" width="1518" height="1287" alt="Proposed bonding motifs of SPAN: three cyclized chains with C–Sx–C, N–Sx–N and N–Sx–C bridges, C=S, intra-chain S3 rings and a pendant C–Sx–H" loading="lazy">
     </figure>
@@ -109,7 +109,7 @@
     </figure>
 
     <h3>Kinetic Monte Carlo</h3>
-    <p>Gillespie reaction network with rates <span class="eq">k = A exp(&minus;E<sub>a</sub> / k<sub>B</sub>T)</span>, barriers from the NEB catalog (HSE06-corrected where available). Used for ratios between channels, not for absolute times.</p>
+    <p>Gillespie reaction network with rates <span class="eq">k = A exp(&minus;E<sub>a</sub> / k<sub>B</sub>T)</span>, barriers from the NEB catalog (HSE06-corrected where available). Used for ratios between channels, not for absolute times. This is the last stage of the framework: the rate catalog is built; kinetic Monte Carlo results are generation-2 work.</p>
   </section>
 
   <!-- 3 -->
@@ -143,7 +143,7 @@
     </table>
     </div>
 
-    <p>The measured S&ndash;S bond enthalpy of S<sub>8</sub> is 1.75 eV, which the free-ring value reproduces.</p>
+    <p>The free-ring value is consistent with the S<sub>8</sub> ring-opening enthalpy, 1.75 eV.</p>
 
     <p><strong>Why nitrogen activates sulfur:</strong> the in-plane sp&sup2; lone pair of a pyridinic nitrogen donates into the S&ndash;S &sigma;* orbital of S<sub>8</sub> (an S<sub>N</sub>2 displacement at sulfur), so an N&ndash;S bond forms while the S&ndash;S bond breaks. The transition state is a bond exchange rather than a bond loss, the leaving polysulfide charge is delocalized along the chain, and the result is a stabilized zwitterion. This is the classical amine and phosphine activation of S<sub>8</sub> and the chemistry behind nitrogen-based vulcanization accelerators.</p>
 
@@ -168,14 +168,14 @@
 
     <h3>Lithiation protocol</h3>
     <ol>
-      <li>Insert a batch of lithium: 5 % of the final lithium count, 2 to 3 atoms, at the most favourable sites (nitrogen pockets first, then S&ndash;S and C&ndash;S).</li>
+      <li>Insert a batch of lithium: 5 % of the final lithium count, 2 to 3 atoms. For each atom, 12 candidate sites next to S or N are drawn at random and the lowest-energy one wins; nitrogen pockets win whenever they are drawn, so they fill first.</li>
       <li>Anneal 2 ps with a Langevin thermostat at 300 K, then 4 ps NPT at 1 atm, then relax with FIRE (a damped-dynamics geometry optimizer) to forces below 0.1 eV/&Aring;.</li>
-      <li>Take the energy E(Li<sub>n</sub> SPAN). The free energy is approximated by this 0 K energy; entropy and pV terms are below 0.05 V.</li>
-      <li>Step voltage: <span class="eq">V<sub>step</sub> = &minus;[E(Li<sub>n</sub>) &minus; E(Li<sub>n&minus;k</sub>) &minus; k&nbsp;E<sub>Li</sub>] / k</span>, with E<sub>Li</sub> the energy per atom of bcc lithium at the same DFT level.</li>
+      <li>Take the energy E(Li<sub>n</sub> SPAN). The free energy is approximated by this 0 K energy; vibrational and configurational entropy and the pV term are neglected, below 0.1 V except near the ends of discharge.</li>
+      <li>Step voltage: <span class="eq">V<sub>step</sub> = &minus;[E(Li<sub>n</sub>) &minus; E(Li<sub>n&minus;k</sub>) &minus; k&nbsp;E<sub>Li</sub>] / k</span>, with E<sub>Li</sub> the energy per atom of bcc lithium at the same DFT level. Check of the force field: MACE step voltages lie within 0.15 V of DFT single points on relabeled lithiated boxes (Li/S 0.5 to 2).</li>
       <li>Capacity: <span class="eq">Q = n F / M<sub>SPAN</sub></span> in mAh per gram of lithium-free SPAN. Repeat to Li/S = 2.</li>
     </ol>
 
-    <p>One &ldquo;insertion order&rdquo; is one complete run from pristine to Li/S = 2 with its own random choice among candidate sites at every step. Each box is run with 30 insertion orders (18 to 24 steps each, about 600 relaxed configurations and about 4 ns of dynamics per box). The curve on the poster is the mean over the 30 orders and the band is one standard deviation. Charge is the same equation run backwards, removing the cheapest lithium first.</p>
+    <p>One &ldquo;insertion order&rdquo; is one complete run from pristine to Li/S = 2 with its own random draw of candidate sites at every step. The two composition-matched boxes are run with 30 insertion orders each (18 to 24 steps each, about 600 relaxed configurations and about 4 ns of dynamics per box); the generation-1 screen uses 3 to 4 orders per box. The curve on the poster is the mean over the 30 orders and the band is one standard deviation. Charge is the same equation run backwards, removing the cheapest lithium first.</p>
 
 
     <div class="interactive" id="discharge-viewer" hidden>
@@ -191,7 +191,7 @@
     </figure>
     <figure>
       <img src="figures/fig_voltage_mix.png" width="1233" height="1014" alt="Mean discharge voltage to Li/S = 2 for each motif and for the two matched mixtures, compared with the experimental mean voltage of 1.79 V" loading="lazy">
-      <figcaption>The experimental curves are reversible (later-cycle) curves reconstructed by integrating measured dQ/dV. Simulated voltages are equilibrium (zero-current) values; a cell at finite rate adds an overpotential that grows at the end of discharge.</figcaption>
+      <figcaption>The experimental curves are reversible (later-cycle) curves reconstructed by integrating measured dQ/dV. The simulated curves are the first lithiation of the pristine box; the high early segment is the nitrogen-pocket lithium that stays trapped (section 6), so later cycles start below it. Simulated voltages are zero-current step voltages; a cell at finite rate adds an overpotential that grows at the end of discharge.</figcaption>
     </figure>
   </section>
 
@@ -208,7 +208,7 @@
       <img src="figures/fig_evo_loop.png" width="2698" height="1060" alt="The evolutionary loop: generate, densify, lithiate, score, then select and mutate" loading="lazy">
     </figure>
 
-    <p>Every proposed motif was built as a periodic cell, relaxed at the same DFT level and included in training, so the force field knows every bonding type. Generation 1: all 39 four-pair mixtures of the ten motifs inside S:N 1.05 to 1.55 and H:N 0.35 to 0.95, 78 boxes run in parallel on 78 GPUs.</p>
+    <p>Every proposed motif was built as a periodic cell, relaxed at the same DFT level and included in training, so the force field knows every bonding type. Generation 1: all 39 four-pair mixtures of the ten motifs (the nine motif cells plus a pendant C&ndash;S<sub>6</sub>&ndash;H variant) inside S:N 1.05 to 1.55 and H:N 0.35 to 0.95: 78 packings submitted, 72 survived densification, 36 scored so far, with 3 to 4 insertion orders each.</p>
 
     <p>Score = composition distance (S:N and H:N in units of a 0.15 tolerance) + RMS distance between the simulated and the experimental curve over the common capacity range (in units of 0.2 V) + half the mean-voltage distance (in units of 0.2 V). The top third of each generation is kept, one motif is swapped or two parents are recombined, and the new boxes go back to densification.</p>
 
@@ -251,9 +251,9 @@
         <div class="chart-col"></div>
       </div>
     </div>
-    <p>Pockets of two to four ring nitrogens fill first, at 3 V and above, and need more than the 3 V charge cutoff to empty: 18 % of the first discharge stays in the C=S box. DFT check of the force field for the pocket shown: moving the lithium from the pocket to a sulfur site costs 2.38 eV by DFT (2.67 eV with HSE06) and 2.12 eV by MACE; the sign agrees in 8 of 9 boxes. Charge retraces discharge in the simulation because it carries no current; the gap between branches in a measured cell is kinetic.</p>
+    <p>Pockets of two to four ring nitrogens fill first, at 3 V and above, and need more than the 3 V charge cutoff to empty: 74 of 403 mAh/g (18 %) of the first discharge stay in the C=S box. Across the seven boxes with charge runs the trapped share is 0 to 30 %, and for this box it moves to 10 to 26 % for a &plusmn;0.3 V shift of the cutoff. DFT check of the force field for the pocket shown: moving the lithium from the pocket to a sulfur site costs 2.38 eV by DFT (2.67 eV with HSE06) and 2.12 eV by MACE; the sign agrees in 8 of 9 boxes. Charge is computed with no overpotential; the small gap between the branches is path hysteresis of insertion and removal, and a measured cell adds kinetics on top.</p>
 
-    <p>Discharge products seen in the trajectories: sulfur chains shorten stepwise through tethered S<sub>2</sub> and S<sub>3</sub> units (Li<sub>2</sub>S<sub>2</sub> and Li<sub>2</sub>S<sub>3</sub> analogues) and end as isolated sulfide units at Li/S = 2, 76 to 99 % of them still bonded to carbon or nitrogen with three to four lithium neighbours. No separate Li<sub>2</sub>S phase nucleates in a 1.5 nm box, and the cell cannot show one.</p>
+    <p>Discharge products seen in the trajectories: sulfur chains shorten stepwise through tethered C&ndash;S<sub>2</sub>&ndash;Li and C&ndash;S<sub>3</sub>&ndash;Li units (Li<sub>2</sub>S<sub>2</sub>-like) and end as isolated sulfide units at Li/S = 2, 76 to 99 % of them still bonded to carbon or nitrogen with three to four lithium neighbors. The 1.5 nm box is too small to show whether a separate Li<sub>2</sub>S phase nucleates.</p>
 
     <p class="refs">References: Wang et al., <em>J. Am. Chem. Soc.</em> (2023), doi <a href="https://doi.org/10.1021/jacs.3c00628">10.1021/jacs.3c00628</a> (Li 1s 53.2 eV and N 1s 398.2 eV after discharge, partial recovery on charge; discharge curves of 450 &deg;C SPAN). Kuai et al. (2024), Raman 600 cm<sup>&minus;1</sup> Li&ndash;N. Perez Beltran and Balbuena (2021); Sapkota et al. (2023).</p>
   </section>
